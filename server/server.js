@@ -3,6 +3,7 @@ import { configDotenv } from 'dotenv';
 import connectDB from './config/db.js';
 import authRoutes from './routes/auth.user.routes.js' ; 
 import foodPartnerRoutes from './routes/auth.foodPartner.routes.js'
+import foodRoutes from './routes/food.routes.js' ;
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan' ;
 
@@ -19,7 +20,8 @@ app.use(express.urlencoded({
 }))
 
 app.use('/auth', authRoutes) ;
-app.use("/auth/food-partner", foodPartnerRoutes);
+app.use("/auth", foodPartnerRoutes);
+app.use('/api/food', foodRoutes) ;
 
 const PORT = process.env.PORT ;
 app.listen(PORT, ()=> {
