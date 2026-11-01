@@ -1,10 +1,17 @@
 import express from 'express' ;
-import authorize from '../middlewares/auth.middleware';
-import foodController from '../controllers/food.controller.js' 
+import multer from 'multer' ;
+import authorize from '../middlewares/auth.middleware.js';
+import {createFood} from '../controllers/food.controller.js';
+import FoodPartner from '../model/FoodPartner.js';
+
 const Router = express.Router() ; 
 
-let authMiddleWare = authorize('FoodPartner').authUser ; 
+let authMiddleWare = authorize(FoodPartner) ; 
 
-Router.post('/', authMiddleWare , foodController) 
+const upload = multer({
+    storage : multer.memoryStorage() 
+})
+
+Router.post('/create-food', authMiddleWare , upload.single('video') , createFood) 
 
 export default Router  ;
