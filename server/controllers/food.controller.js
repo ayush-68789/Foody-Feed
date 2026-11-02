@@ -1,5 +1,6 @@
 import Food from "../model/Food.Item.js";
 import uploadFile from "../services/storage.service.js";
+import {v4 as uuid} from  'uuid' ; 
 
 const createFood = async (req, res) => {
     try {
@@ -12,7 +13,8 @@ const createFood = async (req, res) => {
             });
         }
 
-        const uploadedVideo = await uploadFile(req.file.buffer);
+        const videoID = uuid() ; 
+        const uploadedVideo = await uploadFile(req.file.buffer, videoID);
 
         const food = await Food.create({
             name,

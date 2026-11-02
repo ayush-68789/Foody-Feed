@@ -6,12 +6,13 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const uploadFile = (fileBuffer) => {
+const uploadFile = (fileBuffer ,videoID) => {
     return new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
             {
                 resource_type: "video",
                 folder: "foody-feed",
+                public_id : videoID
             },
             (error, result) => {
                 if (error) {
