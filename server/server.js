@@ -1,5 +1,5 @@
+import 'dotenv/config'
 import express from 'express' ;
-import { configDotenv } from 'dotenv';
 import connectDB from './config/db.js';
 import authRoutes from './routes/auth.user.routes.js' ; 
 import foodPartnerRoutes from './routes/auth.foodPartner.routes.js'
@@ -8,7 +8,6 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan' ;
 
 const app = express() ;
-configDotenv() ;
 
 connectDB() ; 
 
