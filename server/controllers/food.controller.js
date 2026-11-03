@@ -24,7 +24,7 @@ const createFood = async (req, res) => {
         });
 
         return res.status(201).json({
-            message: "Food created successfully",
+            message: "Food Item Added successfully",
             food,
         });
     } catch (error) {
@@ -36,6 +36,24 @@ const createFood = async (req, res) => {
         });
     }
 };
+
+const getFood = async(req , res) => {
+    try{
+        const foodItem = await Food.find({}) ; 
+        return res.status(200).json({
+            message : "Food Items fetched Successfully" ,
+            foodItem : foodItem
+        })
+    }
+    catch(err)
+    {
+        return res.status(500).json({
+            message : "Food Item not found",
+            err
+        })
+    }
+}
 export {
-    createFood
+    createFood , 
+    getFood
 }
