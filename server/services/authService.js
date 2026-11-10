@@ -1,94 +1,113 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
-const authService = (model , accountType) => {
+const authService = (model, accountType) => {
     const register = async (req, res) => {
         try {
-            const { userName, email, password } = req.body;
-            if (!userName || !email || !password) {
+            const { userName, email, password, restaurantName, ownerName, phone, address } = req.body;
+            if (!userName || !email || !password || (accountType === "foodPartner" && (!restaurantName || !ownerName || !phone || !address))) 
+            {
                 return res.status(400).json({
-                    Error: "Something is Missing",
+                    message: "Please provide all required details",
                 });
             }
             const user = await model.findOne({
-                $or: [{ userName }, { email }],
+                $or: [
+                    { userName }, 
+                    { email }
+                ] 
             });
-            if (user) {
-                return res.status(409).json({
-                    Message: "User already exists",
+            if (user) 
+            {
+                return res.status(409).json({ 
+                    message: "An account with this username or email already exists" 
                 });
             }
-    
-            let salt = await bcrypt.genSalt(Number(process.env.SALT_ROUNDS));
-            let hashedPass = await bcrypt.hash(password, salt);
-    
+            if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is not configured");
+
+            const saltRounds = Number(process.env.SALT_ROUNDS) || 10;
+            const hashedPass = await bcrypt.hash(password, saltRounds);
             const newUser = await model.create({
-                userName,
-                email,
+                userName: accountType === "foodPartner" ? ownerName : userName,
+                email: email.trim().toLowerCase(),
                 password: hashedPass,
+                ...(accountType === "foodPartner" ? { restaurantName, ownerName, phone, address } : {}),
             });
-    
-            let token = jwt.sign(
-                {
-                    userId: newUser._id,
-                    account_type: accountType ,
-                },
-                process.env.JWT_SECRET,
-                {
-                    expiresIn: "7d",
-                },
-            );
-    
-            res.cookie("token", token);
+            const token = jwt.sign({ 
+                userId: newUser._id, 
+                account_type: accountType 
+            }, process.env.JWT_SECRET, 
+            { expiresIn: "7d" });
+
+            res.cookie("token", token, { 
+                httpOnly: true, 
+                sameSite: "lax", 
+                secure: process.env.NODE_ENV === "production", 
+                maxAge: 7 * 24 * 60 * 60 * 1000 
+            });
             return res.status(201).json({
-                Message: "User registered successfully",
-                newUser,
+                message: "Account registered successfully",
+                user: { 
+                    id: newUser._id, 
+                    userName: newUser.userName, 
+                    email: newUser.email, 
+                    accountType 
+                },
             });
         } catch (err) {
-            console.log(err);
-            return res.status(400).json({
-                Error: err,
-            });
+            if (err.code === 11000) return res.status(409).json({ message: "An account with this username or email already exists" });
+            console.error(err);
+            return res.status(500).json({ message: "Unable to register account" });
         }
     };
     
     const login = async (req, res) => {
-        let { identifier, password } = req.body;
-        let userExist = await model.findOne({
-            $or: [{ userName: identifier }, { email: identifier }],
-        });
-        if (!userExist) {
-            return res.status(404).json({
-                Message: "Register First User not Found",
+        try {
+            const { identifier, email, password } = req.body;
+            const loginId = (identifier || email || "").trim().toLowerCase();
+            if (!loginId || !password){
+                return res.status(400).json({ 
+                    message: "Email and password are required" 
+                });
+            }
+            const account = await model.findOne({ 
+                $or: [
+                    { userName: loginId }, 
+                    { email: loginId }
+                ] 
             });
-        }
-    
-        let passCheck = await bcrypt.compare(password, userExist.password);
-        if (!passCheck) {
-            return res.status(409).json({
-                Message: "Invalid Credentials",
+            if (!account || !(await bcrypt.compare(password, account.password))) return res.status(401).json({ message: "Invalid email or password" });
+            if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is not configured");
+
+            const token = jwt.sign({ 
+                userId: account._id, 
+                account_type: accountType 
+            }, process.env.JWT_SECRET, 
+            { expiresIn: "7d"});
+
+            res.cookie("token", token, { 
+                httpOnly: true, 
+                sameSite: "lax", 
+                secure: process.env.NODE_ENV === "production", 
+                maxAge: 7 * 24 * 60 * 60 * 1000 
             });
+            return res.status(200).json({ 
+                message: "Logged in successfully", 
+                user: { 
+                    id: account._id, 
+                    userName: account.userName, 
+                    email: account.email, 
+                    accountType 
+                } 
+            });
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ message: "Unable to log in" });
         }
-    
-        const token = jwt.sign(
-            {
-                userId: userExist._id,
-                account_type: accountType ,
-            },
-            process.env.JWT_SECRET,
-            {
-                expiresIn: "7d",
-            },
-        );
-        res.cookie("token", token);
-        res.status(200).json({
-            Message: "User Logged in",
-            userExist,
-        });
     };
     
     const logout = async (req, res) => {
-        res.clearCookie("token");
+        res.clearCookie("token", { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production" });
         res.status(200).json({
             Message: "Logged Out",
         });

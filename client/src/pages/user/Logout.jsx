@@ -2,8 +2,11 @@ import { Box, Typography, Button, Stack } from "@mui/material";
 
 import { Link } from "react-router-dom";
 import AuthLayout from "../../components/AuthLayout.jsx";
+import { useEffect } from "react";
+import { authRequest } from "../../lib/auth.js";
 
 const Logout = () => {
+    useEffect(() => { authRequest("user/logout").catch(() => {}); }, []);
     return (
         <AuthLayout>
             <Stack

@@ -22,7 +22,7 @@ app.use('/auth', authRoutes) ;
 app.use("/auth", foodPartnerRoutes);
 app.use('/api/food', foodRoutes) ;
 
-const PORT = process.env.PORT ;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, ()=> {
     console.log('-'.repeat(28)) ; 
     console.log(`Server Running at PORT : ${PORT}`) ;

@@ -11,11 +11,22 @@ import { LockOutlined, EmailOutlined } from "@mui/icons-material";
 
 import { Link } from "react-router-dom";
 import AuthLayout from "../../components/AuthLayout.jsx";
+import { useState } from "react";
+import { authRequest } from "../../lib/auth.js";
 
 const Login = () => {
+    const [form, setForm] = useState({ email: "", password: "" });
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
+    const [busy, setBusy] = useState(false);
+    const submit = async (event) => {
+        event.preventDefault(); setError(""); setBusy(true);
+        try { await authRequest("user/login", { identifier: form.email, password: form.password }); setSuccess("Signed in successfully."); }
+        catch (err) { setError(err.message); } finally { setBusy(false); }
+    };
     return (
         <AuthLayout>
-            <Stack spacing={3}>
+            <Stack component="form" onSubmit={submit} spacing={3}>
                 {/* Header */}
                 <Box>
                     <Box
@@ -50,6 +61,9 @@ const Login = () => {
                         label="Email address"
                         placeholder="you@example.com"
                         type="email"
+                        required
+                        value={form.email}
+                        onChange={(e) => setForm({ ...form, email: e.target.value })}
                         slotProps={{
                             input: {
                                 startAdornment: (
@@ -90,12 +104,17 @@ const Login = () => {
                             fullWidth
                             placeholder="Enter your password"
                             type="password"
+                            required
+                            value={form.password}
+                            onChange={(e) => setForm({ ...form, password: e.target.value })}
                         />
                     </Box>
                 </Stack>
 
                 {/* Login Button */}
                 <Button
+                    type="submit"
+                    disabled={busy}
                     fullWidth
                     variant="contained"
                     size="large"
@@ -113,8 +132,10 @@ const Login = () => {
                         },
                     }}
                 >
-                    Sign in
+                    {busy ? "Signing in…" : "Sign in"}
                 </Button>
+                {error && <Typography role="alert" color="error">{error}</Typography>}
+                {success && <Typography role="status" color="success.main">{success}</Typography>}
 
                 {/* Register Link */}
                 <Typography
